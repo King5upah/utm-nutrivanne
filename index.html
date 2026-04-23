@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Links — NutriVanne</title>
+  <style>
+    :root {
+      --green: #2d6a4f;
+      --green-light: #52b788;
+      --green-pale: #d8f3dc;
+      --dark: #1b1b1b;
+      --gray: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--green);
+      padding: 1rem 1.5rem;
+      color: white;
+    }
+
+    header h1 { font-size: 1rem; font-weight: 600; }
+    header p { font-size: 0.8rem; opacity: 0.65; margin-top: 2px; }
+
+    .main {
+      max-width: 620px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray);
+      margin-bottom: 1rem;
+    }
+
+    /* Plataformas */
+    .platforms {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .plat {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: 99px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--dark);
+      transition: all 0.12s;
+    }
+
+    .plat:hover { border-color: var(--green-light); }
+
+    .plat.active {
+      border-color: var(--green);
+      background: var(--green-pale);
+      color: var(--green);
+    }
+
+    .plat .badge {
+      font-size: 0.65rem;
+      font-family: monospace;
+      font-weight: 700;
+      background: #d1d5db;
+      color: #374151;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .plat.active .badge {
+      background: var(--green);
+      color: white;
+    }
+
+    /* Fields */
+    .fields { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+
+    label { font-size: 0.8rem; font-weight: 500; color: var(--gray); display: block; margin-bottom: 0.3rem; }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.12s;
+      resize: none;
+    }
+
+    input:focus, textarea:focus { border-color: var(--green-light); }
+
+    .btn {
+      width: 100%;
+      padding: 0.7rem;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.25rem;
+      transition: background 0.12s;
+    }
+
+    .btn:hover { background: #235c42; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* Result */
+    .result {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--green-pale);
+      border-radius: 8px;
+      border: 1.5px solid var(--green-light);
+    }
+
+    .result.show { display: block; }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .result-id {
+      font-size: 2.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: var(--green);
+      letter-spacing: 3px;
+    }
+
+    .result-url {
+      font-size: 0.85rem;
+      color: var(--dark);
+      font-family: monospace;
+      margin-top: 0.5rem;
+    }
+
+    .copy-btn {
+      padding: 0.4rem 0.9rem;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { background: #235c42; }
+
+    /* History */
+    .history-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .refresh {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--gray);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .refresh:hover { border-color: var(--green-light); color: var(--green); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+    th {
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      background: var(--bg);
+      color: var(--gray);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .id-tag {
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--green);
+    }
+
+    .plat-tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--green-pale);
+      color: var(--green);
+    }
+
+    .copy-small {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--gray);
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .copy-small:hover { border-color: var(--green); color: var(--green); }
+
+    .empty { text-align: center; color: var(--gray); padding: 1.5rem; font-size: 0.85rem; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--dark);
+      color: white;
+      padding: 0.5rem 1.1rem;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      opacity: 0;
+      transition: all 0.18s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>UTM Links · NutriVanne</h1>
+  <p>Genera links para cruzar con GA4</p>
+</header>
+
+<div class="main">
+
+  <!-- Formulario -->
+  <div class="card">
+    <div class="card-title">Nuevo link</div>
+
+    <div class="platforms">
+      <button class="plat" data-p="i" onclick="sel('i')">📸 Instagram <span class="badge">i</span></button>
+      <button class="plat" data-p="f" onclick="sel('f')">👥 Facebook <span class="badge">f</span></button>
+      <button class="plat" data-p="t" onclick="sel('t')">🎵 TikTok <span class="badge">t</span></button>
+      <button class="plat" data-p="y" onclick="sel('y')">▶️ YouTube <span class="badge">y</span></button>
+      <button class="plat" data-p="w" onclick="sel('w')">💬 WhatsApp <span class="badge">w</span></button>
+    </div>
+
+    <div class="fields">
+      <div>
+        <label>Título de la publicación</label>
+        <input id="titulo" type="text" placeholder="Ej: Reel oferta abril">
+      </div>
+      <div>
+        <label>Descripción (opcional)</label>
+        <textarea id="descripcion" rows="2" placeholder="Ej: Antes y después cliente CDMX"></textarea>
+      </div>
+    </div>
+
+    <button class="btn" id="genBtn" onclick="generar()">Generar link</button>
+
+    <div class="result" id="result">
+      <div class="result-row">
+        <div>
+          <div style="font-size:0.72rem;color:var(--gray);margin-bottom:2px">Link generado</div>
+          <div class="result-url" id="result-url">—</div>
+        </div>
+        <div>
+          <div class="result-id" id="result-id">—</div>
+        </div>
+        <button class="copy-btn" onclick="copiar()">Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial -->
+  <div class="card">
+    <div class="history-top">
+      <div class="card-title" style="margin:0">Historial</div>
+      <button class="refresh" onclick="cargarHistorial()">↻ Actualizar</button>
+    </div>
+    <div id="historial"><div class="empty">Cargando...</div></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Copiado</div>
+
+<script>
+  const SCRIPT = 'https://script.google.com/macros/s/AKfycbzxy4Eap8jt5aoiYptNpCcbhwBPF9VYikM8ckF2H0N2Mye0VAbXbpPUoLxmr5e72rUBBw/exec';
+  const BASE = 'https://nutrivanne.com';
+
+  let plataforma = null;
+  let ultimoId = null;
+
+  function sel(p) {
+    plataforma = p;
+    document.querySelectorAll('.plat').forEach(b => b.classList.toggle('active', b.dataset.p === p));
+  }
+
+  async function generar() {
+    if (!plataforma) { alert('Selecciona una plataforma'); return; }
+    const titulo = document.getElementById('titulo').value.trim();
+    if (!titulo) { alert('Escribe el título'); return; }
+    const descripcion = document.getElementById('descripcion').value.trim();
+
+    const btn = document.getElementById('genBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+      const params = new URLSearchParams({ action: 'save', plataforma, titulo, descripcion });
+      const res = await fetch(`${SCRIPT}?${params}`);
+      const data = await res.json();
+
+      if (data.ok) {
+        ultimoId = data.id;
+        const url = `${BASE}/?u=${data.id}`;
+        document.getElementById('result-id').textContent = data.id;
+        document.getElementById('result-url').textContent = url;
+        document.getElementById('result').classList.add('show');
+        document.getElementById('titulo').value = '';
+        document.getElementById('descripcion').value = '';
+        plataforma = null;
+        document.querySelectorAll('.plat').forEach(b => b.classList.remove('active'));
+        cargarHistorial();
+      } else {
+        alert('Error: ' + (data.error || 'intenta de nuevo'));
+      }
+    } catch(e) {
+      alert('Error de conexión');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Generar link';
+  }
+
+  function copiar() {
+    if (!ultimoId) return;
+    navigator.clipboard.writeText(`${BASE}/?u=${ultimoId}`);
+    toast('Copiado');
+  }
+
+  function copiarUrl(id) {
+    navigator.clipboard.writeText(`${BASE}/?u=${id}`);
+    toast('Copiado');
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  async function cargarHistorial() {
+    const el = document.getElementById('historial');
+    try {
+      const res = await fetch(`${SCRIPT}?action=list`);
+      const data = await res.json();
+
+      if (!data.rows || data.rows.length === 0) {
+        el.innerHTML = '<div class="empty">Aún no hay links</div>';
+        return;
+      }
+
+      el.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Plataforma</th>
+              <th>Título</th>
+              <th>Descripción</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.rows.map(r => `
+              <tr>
+                <td><span class="id-tag">${r[0]}</span></td>
+                <td><span class="plat-tag">${r[2]}</span></td>
+                <td>${r[3]}</td>
+                <td style="color:var(--gray)">${r[4] || '—'}</td>
+                <td style="color:var(--gray);font-size:0.75rem">${String(r[1]).split(',')[0]}</td>
+                <td><button class="copy-small" onclick="copiarUrl('${r[0]}')">Copiar</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch(e) {
+      el.innerHTML = '<div class="empty">Error al cargar</div>';
+    }
+  }
+
+  cargarHistorial();
+</script>
+</body>
+</html>
