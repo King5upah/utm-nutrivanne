@@ -544,27 +544,39 @@ const App = () => {
     setExporting(true);
     try {
       const plat = PLATFORMS.find(p => p.id === platform);
-      const el = canvasRef.current;
-      const naturalW = plat.w;
-      const naturalH = plat.h;
-      const displayW = el.offsetWidth;
-      const pixelRatio = naturalW / displayW;
 
-      const canvas = await html2canvas(el, {
-        scale: pixelRatio,
+      // Clonar el elemento a tamaño completo fuera del viewport
+      // (el original está con CSS transform scale que html2canvas no maneja bien)
+      const clone = canvasRef.current.cloneNode(true);
+      clone.style.transform = 'none';
+      clone.style.width = plat.w + 'px';
+      clone.style.height = plat.h + 'px';
+      clone.style.position = 'fixed';
+      clone.style.top = '-99999px';
+      clone.style.left = '0';
+      clone.style.zIndex = '-1';
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale: 1,
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
-        width: displayW,
-        height: el.offsetHeight,
+        width: plat.w,
+        height: plat.h,
         logging: false,
       });
+
+      document.body.removeChild(clone);
 
       const link = document.createElement('a');
       link.download = `nutrivanne_${postType}_${platform}_${Date.now()}.png`;
       link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
-    } catch (e) { console.error(e); alert('Error al exportar. Intenta hacer screenshot manual.'); }
+    } catch (e) {
+      console.error(e);
+      alert('Error al exportar. Intenta hacer screenshot manual.');
+    }
     setExporting(false);
   };
 
