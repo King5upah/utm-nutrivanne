@@ -276,47 +276,92 @@ const SingleTestimonial = ({ data, sty, plat, showLogo }) => {
 // ─── COLLAGE TESTIMONIAL ──────────────────────────────────────────────────────
 const CollageTestimonial = ({ data, sty, plat, showLogo }) => {
   const isStory = plat.h > plat.w;
-  const count = Math.max(2, Math.min(4, data.length));
+  const isFacebook = plat.id === 'facebook';
+
+  // Determine grid: 2 or 4 cards (never 3 — unbalanced)
+  const filled = data.filter(t => t.name || t.result || t.before || t.after).length;
+  const count = filled >= 3 ? 4 : 2;
   const cols = 2;
-  const rows = count <= 2 ? 1 : 2;
+  const rows = count === 4 ? 2 : 1;
+
+  // Pad data array with empty placeholders
+  const cards = Array.from({ length: count }, (_, i) => data[i] || {});
+
+  const PhotoSlot = ({ src, lbl }) => (
+    <div style={{ position: 'relative', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+      {src
+        ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        : <div style={{ width: '100%', height: '100%', background: '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 24 : isFacebook ? 12 : 16, color: '#333', letterSpacing: '0.2em' }}>{lbl}</span>
+          </div>
+      }
+      <div style={{
+        position: 'absolute', bottom: 0, left: lbl === 'ANTES' ? 0 : 'auto', right: lbl === 'DESPUÉS' ? 0 : 'auto',
+        padding: isStory ? '5px 14px' : isFacebook ? '3px 7px' : '4px 10px',
+        background: lbl === 'DESPUÉS' ? sty.accent : 'rgba(0,0,0,0.78)',
+      }}>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 22 : isFacebook ? 11 : 14, color: lbl === 'DESPUÉS' ? '#000' : '#888', letterSpacing: '0.12em' }}>{lbl}</span>
+      </div>
+    </div>
+  );
+
+  const cardPad = isStory ? '14px 18px' : isFacebook ? '6px 10px' : '10px 14px';
+  const resultSize = isStory ? 30 : isFacebook ? 15 : 20;
+  const metaSize = isStory ? 16 : isFacebook ? 10 : 12;
 
   return (
     <div style={{ width: '100%', height: '100%', background: sty.bg, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ height: 6, background: sty.accent, flexShrink: 0 }} />
+      {/* Top accent bar */}
+      <div style={{ height: 5, background: sty.accent, flexShrink: 0 }} />
 
-      <div style={{ padding: isStory ? '44px 64px 24px' : '36px 64px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Logo color={sty.accent} size={isStory ? 56 : 44} />
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 48 : 38, color: '#fff', letterSpacing: '0.08em', lineHeight: 1 }}>NUTRI VANNE</div>
+      {/* Header */}
+      <div style={{ padding: isStory ? '40px 56px 24px' : isFacebook ? '18px 36px 12px' : '28px 48px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isStory ? 14 : 10 }}>
+          <Logo color={sty.accent} size={isStory ? 48 : isFacebook ? 28 : 36} />
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 44 : isFacebook ? 26 : 32, color: '#fff', letterSpacing: '0.08em', lineHeight: 1 }}>NUTRI VANNE</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 36 : 28, color: sty.accent, letterSpacing: '0.1em', lineHeight: 1 }}>TESTIMONIOS</div>
-          <div style={{ fontSize: isStory ? 20 : 14, color: '#666', fontWeight: 600, letterSpacing: '0.2em', marginTop: 4 }}>PACIENTES REALES</div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 32 : isFacebook ? 20 : 24, color: sty.accent, letterSpacing: '0.1em', lineHeight: 1 }}>TESTIMONIOS</div>
+          <div style={{ fontSize: isStory ? 16 : isFacebook ? 9 : 11, color: '#555', fontWeight: 700, letterSpacing: '0.2em', marginTop: 3, textTransform: 'uppercase' }}>pacientes reales</div>
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: isStory ? '0 44px 44px' : '0 44px 36px', display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 16, overflow: 'hidden' }}>
-        {data.slice(0, count).map((t, i) => (
-          <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: 10, background: '#111' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: t.quote ? '60%' : '72%' }}>
-              <div style={{ position: 'relative', overflow: 'hidden' }}>
-                {t.before ? <img src={t.before} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 12, color: '#333' }}>antes</div>}
-                <div style={{ position: 'absolute', bottom: 6, left: 6, background: 'rgba(0,0,0,0.8)', color: '#888', padding: '2px 7px', fontSize: isStory ? 16 : 11, fontWeight: 700, borderRadius: 3, letterSpacing: '0.1em' }}>ANTES</div>
+      {/* Cards grid */}
+      <div style={{
+        flex: 1, minHeight: 0,
+        padding: isStory ? '0 40px 48px' : isFacebook ? '0 24px 20px' : '0 36px 32px',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+        gap: isStory ? 18 : isFacebook ? 10 : 14,
+      }}>
+        {cards.map((t, i) => {
+          const isEmpty = !t.name && !t.result && !t.before && !t.after;
+          return (
+            <div key={i} style={{ borderRadius: isStory ? 14 : 10, overflow: 'hidden', background: '#1a1a1a', border: '1px solid #282828', display: 'flex', flexDirection: 'column', opacity: isEmpty ? 0.2 : 1 }}>
+              {/* Photo row: 62% height */}
+              <div style={{ flex: '0 0 62%', display: 'flex', flexDirection: 'row' }}>
+                <PhotoSlot src={t.before} lbl="ANTES" />
+                <div style={{ width: 2, background: sty.bg, flexShrink: 0 }} />
+                <PhotoSlot src={t.after} lbl="DESPUÉS" />
               </div>
-              <div style={{ position: 'relative', overflow: 'hidden' }}>
-                {t.after ? <img src={t.after} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 12, color: '#333' }}>después</div>}
-                <div style={{ position: 'absolute', bottom: 6, right: 6, background: sty.accent, color: '#000', padding: '2px 7px', fontSize: isStory ? 16 : 11, fontWeight: 700, borderRadius: 3, letterSpacing: '0.1em' }}>DESPUÉS</div>
+              {/* Info row: remaining height */}
+              <div style={{ flex: 1, background: '#141414', borderTop: `2px solid ${sty.accent}`, padding: cardPad, display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden', minHeight: 0, gap: 4 }}>
+                {t.result
+                  ? <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: resultSize, color: sty.accent, letterSpacing: '0.05em', lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.result}</div>
+                  : <div style={{ height: resultSize * 0.75, background: '#2a2a2a', borderRadius: 3, width: '65%' }} />
+                }
+                {t.name || t.time
+                  ? <div style={{ fontSize: metaSize, color: '#777', fontWeight: 600, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{[t.name, t.time].filter(Boolean).join(' · ')}</div>
+                  : <div style={{ height: metaSize * 0.8, background: '#222', borderRadius: 3, width: '42%' }} />
+                }
+                {t.quote && (
+                  <div style={{ fontSize: isStory ? 17 : isFacebook ? 9 : 11, color: '#666', fontStyle: 'italic', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.35 }}>"{t.quote}"</div>
+                )}
               </div>
             </div>
-            <div style={{ background: '#0e0e0e', borderTop: `2px solid ${sty.accent}`, padding: isStory ? '10px 16px' : '6px 10px', height: t.quote ? '40%' : '28%', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
-              {t.quote ? (
-                <div style={{ fontSize: isStory ? 18 : 12, color: '#bbb', fontStyle: 'italic', lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>"{t.quote}"</div>
-              ) : null}
-              {t.result && <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 28 : 19, color: sty.accent, letterSpacing: '0.05em', lineHeight: 1, marginTop: t.quote ? 4 : 0 }}>{t.result}</div>}
-              {(t.time || t.name) && <div style={{ fontSize: isStory ? 15 : 10, color: '#888', fontWeight: 600, marginTop: 2 }}>{[t.name, t.time].filter(Boolean).join(' · ')}</div>}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {showLogo && <LogoWatermark sty={sty} size={isStory ? 50 : 40} position="br" />}
