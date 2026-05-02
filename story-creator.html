@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Story Creator – Nutri Vanne</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --neon: #39FF14;
+    --black: #080808;
+    --dark: #111111;
+    --dark2: #1a1a1a;
+    --dark3: #222222;
+    --dark4: #2c2c2c;
+    --white: #f5f5f5;
+    --muted: #888;
+    --border: rgba(57,255,20,0.18);
+  }
+  html, body { height: 100%; background: var(--black); color: var(--white); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+  #root { height: 100%; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--dark); }
+  ::-webkit-scrollbar-thumb { background: var(--dark4); border-radius: 2px; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 3px; background: var(--dark4); border-radius: 2px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--neon); border-radius: 50%; cursor: pointer; }
+  textarea { resize: vertical; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useCallback, useEffect } = React;
+
+// ─── SVG Logo ────────────────────────────────────────────────────────────────
+const Logo = ({ color = '#39FF14', size = 32 }) => (
+  <svg width={size} height={size} viewBox="0 0 1024 1024" fill="none">
+    <path fill={color} d="M 477.5,567.5 C 478.167,547.167 478.833,526.833 479.5,506.5C 498.896,555.183 518.396,603.849 538,652.5C 542.1,668.685 535.933,676.685 519.5,676.5C 502.931,675.811 487.931,670.644 474.5,661C 457.44,646.281 442.94,629.448 431,610.5C 397,555.833 363,501.167 329,446.5C 326.966,443.141 324.632,442.808 322,445.5C 321.667,518.833 321.333,592.167 321,665.5C 319.5,671 316,674.5 310.5,676C 296.833,676.667 283.167,676.667 269.5,676C 264.572,674.073 261.406,670.573 260,665.5C 259.333,562.833 259.333,460.167 260,357.5C 261.406,352.427 264.572,348.927 269.5,347C 289.167,346.333 308.833,346.333 328.5,347C 331.377,347.956 334.044,349.289 336.5,351C 381.249,424.5 426.249,497.834 471.5,571C 474.872,572.122 476.872,570.955 477.5,567.5 Z"/>
+    <path fill={color} d="M 416.5,346.5 C 453.716,346.024 482.883,361.024 504,391.5C 516.638,410.447 527.971,430.113 538,450.5C 558.036,496.274 576.703,542.607 594,589.5C 598.067,597.503 601.733,597.17 605,588.5C 636.747,509.591 669.081,430.925 702,352.5C 703.938,349.894 706.438,348.061 709.5,347C 724.5,346.333 739.5,346.333 754.5,347C 761.251,348.996 764.084,353.496 763,360.5C 719.805,461.752 676.805,563.085 634,664.5C 632.141,670.36 628.307,674.193 622.5,676C 605.167,676.667 587.833,676.667 570.5,676C 567.098,674.6 564.264,672.433 562,669.5C 541.275,618.659 520.942,567.659 501,516.5C 482.658,470.472 459.658,427.138 432,386.5C 424.667,377.167 417.333,367.833 410,358.5C 409.339,352.989 411.506,348.989 416.5,346.5 Z"/>
+  </svg>
+);
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const POST_TYPES = [
+  { id: 'single',  label: 'Antes / Después', desc: '1 transformación con fotos',   icon: '👤' },
+  { id: 'collage', label: 'Collage',          desc: '2 a 4 pacientes',              icon: '⊞' },
+  { id: 'quote',   label: 'Solo Frase',       desc: 'Reseña de texto del paciente', icon: '💬' },
+  { id: 'promo',   label: 'Promocional',      desc: 'Oferta o descuento',           icon: '⚡' },
+  { id: 'metrics', label: 'Resultados',       desc: 'Solo métricas / números',      icon: '📊' },
+];
+
+const PLATFORMS = [
+  { id: 'story',    label: 'Story',    dim: '9:16',    w: 1080, h: 1920, icon: '📱' },
+  { id: 'feed_sq',  label: 'Feed 1:1', dim: '1:1',     w: 1080, h: 1080, icon: '◻'  },
+  { id: 'feed_v',   label: 'Feed 4:5', dim: '4:5',     w: 1080, h: 1350, icon: '▬'  },
+  { id: 'carousel', label: 'Carrusel', dim: 'múltiple', w: 1080, h: 1080, icon: '▷▷' },
+  { id: 'facebook', label: 'Facebook', dim: '16:9',    w: 1200, h: 630,  icon: 'f'  },
+];
+
+const STYLES = [
+  { id: 'dark_neon',    label: 'Dark Neón',    desc: 'Negro + verde eléctrico', bg: '#080808', accent: '#39FF14' },
+  { id: 'bold_gritty',  label: 'Bold Gritty',  desc: 'Alto contraste + textura', bg: '#0d0d0d', accent: '#39FF14' },
+  { id: 'minimal_dark', label: 'Minimal Dark', desc: 'Limpio y moderno',        bg: '#141414', accent: '#39FF14' },
+];
+
+// ─── Shared styles ────────────────────────────────────────────────────────────
+const inputStyle = {
+  background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 6,
+  padding: '8px 12px', color: '#f5f5f5', fontSize: 13, fontFamily: 'Inter, sans-serif',
+  outline: 'none', width: '100%', transition: 'border-color .15s',
+};
+const sectionTitle = { fontSize: 11, fontWeight: 800, color: '#39FF14', letterSpacing: '0.2em', marginBottom: 16, textTransform: 'uppercase' };
+const label = (text) => (
+  <label style={{ fontSize: 11, color: '#666', fontWeight: 600, letterSpacing: '0.1em', display: 'block', marginBottom: 5 }}>{text}</label>
+);
+
+// ─── Image Uploader ───────────────────────────────────────────────────────────
+const ImageUploader = ({ lbl, value, onChange, aspect }) => {
+  const ref = useRef();
+  const handleFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onChange(ev.target.result);
+    reader.readAsDataURL(f);
+  };
+  return (
+    <div
+      onClick={() => ref.current.click()}
+      style={{
+        border: value ? '2px solid #39FF14' : '2px dashed #333',
+        borderRadius: 8, background: value ? 'transparent' : '#111',
+        cursor: 'pointer', overflow: 'hidden', position: 'relative',
+        aspectRatio: aspect || '1/1',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'border-color .2s',
+      }}
+    >
+      {value ? (
+        <img src={value} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      ) : (
+        <div style={{ textAlign: 'center', color: '#555' }}>
+          <div style={{ fontSize: 24, marginBottom: 6 }}>+</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em' }}>{lbl}</div>
+        </div>
+      )}
+      {value && (
+        <div style={{
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)',
+          opacity: 0, transition: 'opacity .2s', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', fontSize: 12,
+          fontWeight: 700, color: '#fff', letterSpacing: '0.1em',
+        }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+          onMouseLeave={e => e.currentTarget.style.opacity = 0}
+        >CAMBIAR</div>
+      )}
+      <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+    </div>
+  );
+};
+
+// ─── Testimonial Form ─────────────────────────────────────────────────────────
+const TestimonialForm = ({ data, onChange, index, showRemove, onRemove }) => {
+  const upd = (k, v) => onChange({ ...data, [k]: v });
+  return (
+    <div style={{ background: '#151515', border: '1px solid #2a2a2a', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#39FF14', letterSpacing: '0.12em' }}>PACIENTE {index + 1}</span>
+        {showRemove && (
+          <button onClick={onRemove} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 18 }}>×</button>
+        )}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+        <ImageUploader lbl="ANTES" value={data.before} onChange={v => upd('before', v)} aspect="3/4" />
+        <ImageUploader lbl="DESPUÉS" value={data.after} onChange={v => upd('after', v)} aspect="3/4" />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <input type="text" placeholder="Nombre (opcional)" value={data.name || ''} onChange={e => upd('name', e.target.value)} style={inputStyle} />
+        <input type="text" placeholder='Resultado ej: -7kg en 28 días' value={data.result || ''} onChange={e => upd('result', e.target.value)} style={inputStyle} />
+        <input type="text" placeholder="Tiempo ej: 2 meses" value={data.time || ''} onChange={e => upd('time', e.target.value)} style={inputStyle} />
+        <textarea
+          placeholder='"Lo que dice el paciente..." (opcional)'
+          value={data.quote || ''}
+          onChange={e => upd('quote', e.target.value)}
+          rows={3}
+          style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ─── Logo Watermark ───────────────────────────────────────────────────────────
+const LogoWatermark = ({ sty, size = 80, position = 'br' }) => {
+  const pos = {
+    tl: { top: 40, left: 40 }, tr: { top: 40, right: 40 },
+    bl: { bottom: 40, left: 40 }, br: { bottom: 40, right: 40 },
+  }[position] || { bottom: 40, right: 40 };
+  return (
+    <div style={{ position: 'absolute', ...pos, display: 'flex', alignItems: 'center', gap: 10, opacity: 0.85 }}>
+      <Logo color={sty.accent} size={size * 0.6} />
+      <span style={{ color: '#fff', fontFamily: "'Bebas Neue', sans-serif", fontSize: size * 0.4, letterSpacing: '0.12em', lineHeight: 1 }}>NUTRI VANNE</span>
+    </div>
+  );
+};
+
+// ─── SINGLE TESTIMONIAL ───────────────────────────────────────────────────────
+const SingleTestimonial = ({ data, sty, plat, showLogo }) => {
+  const isStory = plat.h > plat.w;
+  const hasPhotos = data?.before || data?.after;
+  const hasQuote = data?.quote && data.quote.trim().length > 0;
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: sty.bg,
+      display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
+    }}>
+      {sty.id === 'bold_gritty' && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
+          backgroundSize: '200px',
+        }} />
+      )}
+
+      <div style={{ height: 6, background: sty.accent, width: '100%', flexShrink: 0, zIndex: 2 }} />
+
+      {/* Header */}
+      <div style={{ padding: isStory ? '50px 80px 30px' : '40px 80px 24px', zIndex: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Logo color={sty.accent} size={isStory ? 64 : 52} />
+          <div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 52 : 42, color: '#fff', letterSpacing: '0.1em', lineHeight: 1 }}>NUTRI VANNE</div>
+            <div style={{ fontSize: isStory ? 22 : 16, color: sty.accent, fontWeight: 700, letterSpacing: '0.25em', marginTop: 4 }}>TRANSFORMACIÓN REAL</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Photos */}
+      <div style={{ flex: hasQuote ? '0 0 auto' : 1, padding: isStory ? `0 60px` : '0 80px', zIndex: 2, height: hasQuote ? (isStory ? '52%' : '48%') : undefined }}>
+        {hasPhotos ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, height: '100%' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+              {data?.before
+                ? <img src={data.before} alt="antes" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: 22, fontWeight: 700 }}>ANTES</div>
+              }
+              <div style={{ position: 'absolute', top: 16, left: 16, background: '#222', color: '#999', padding: '6px 16px', fontWeight: 800, fontSize: isStory ? 28 : 22, letterSpacing: '0.15em', borderRadius: 4 }}>ANTES</div>
+            </div>
+            <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+              {data?.after
+                ? <img src={data.after} alt="después" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: 22, fontWeight: 700 }}>DESPUÉS</div>
+              }
+              <div style={{ position: 'absolute', top: 16, right: 16, background: sty.accent, color: '#000', padding: '6px 16px', fontWeight: 800, fontSize: isStory ? 28 : 22, letterSpacing: '0.15em', borderRadius: 4 }}>DESPUÉS</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, height: '100%' }}>
+            {['ANTES', 'DESPUÉS'].map((lbl, i) => (
+              <div key={lbl} style={{ borderRadius: 12, border: '2px dashed #2a2a2a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#333', gap: 8 }}>
+                <div style={{ fontSize: isStory ? 36 : 28, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '0.1em', color: i === 1 ? sty.accent : '#555' }}>{lbl}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quote block */}
+      {hasQuote && (
+        <div style={{ padding: isStory ? '28px 80px' : '20px 80px', zIndex: 2, flex: 1, display: 'flex', alignItems: 'center' }}>
+          <div style={{ borderLeft: `4px solid ${sty.accent}`, paddingLeft: isStory ? 32 : 24 }}>
+            <div style={{ fontSize: isStory ? 34 : 24, color: '#fff', fontWeight: 400, fontStyle: 'italic', lineHeight: 1.45, opacity: 0.92 }}>
+              "{data.quote}"
+            </div>
+            {data?.name && (
+              <div style={{ fontSize: isStory ? 22 : 16, color: sty.accent, fontWeight: 700, marginTop: 12, letterSpacing: '0.1em' }}>
+                — {data.name}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Result bar */}
+      {(data?.result || data?.time) && (
+        <div style={{ padding: isStory ? '24px 80px 16px' : '18px 80px 12px', zIndex: 2 }}>
+          {data?.result && (
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 76 : 60, color: sty.accent, letterSpacing: '0.05em', lineHeight: 0.95 }}>
+              {data.result}
+            </div>
+          )}
+          {data?.time && (
+            <div style={{ fontSize: isStory ? 26 : 20, color: '#fff', fontWeight: 600, marginTop: 6, opacity: 0.8 }}>
+              {data.time}{!hasQuote && data?.name ? ` · ${data.name}` : ''}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ height: 4, background: sty.accent, width: '40%', zIndex: 2, marginBottom: 36, marginLeft: 80 }} />
+
+      {showLogo && <LogoWatermark sty={sty} size={isStory ? 56 : 46} position="br" />}
+    </div>
+  );
+};
+
+// ─── COLLAGE TESTIMONIAL ──────────────────────────────────────────────────────
+const CollageTestimonial = ({ data, sty, plat, showLogo }) => {
+  const isStory = plat.h > plat.w;
+  const count = Math.max(2, Math.min(4, data.length));
+  const cols = 2;
+  const rows = count <= 2 ? 1 : 2;
+
+  return (
+    <div style={{ width: '100%', height: '100%', background: sty.bg, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: 6, background: sty.accent, flexShrink: 0 }} />
+
+      <div style={{ padding: isStory ? '44px 64px 24px' : '36px 64px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Logo color={sty.accent} size={isStory ? 56 : 44} />
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 48 : 38, color: '#fff', letterSpacing: '0.08em', lineHeight: 1 }}>NUTRI VANNE</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 36 : 28, color: sty.accent, letterSpacing: '0.1em', lineHeight: 1 }}>TESTIMONIOS</div>
+          <div style={{ fontSize: isStory ? 20 : 14, color: '#666', fontWeight: 600, letterSpacing: '0.2em', marginTop: 4 }}>PACIENTES REALES</div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, padding: isStory ? '0 44px 44px' : '0 44px 36px', display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: 16, overflow: 'hidden' }}>
+        {data.slice(0, count).map((t, i) => (
+          <div key={i} style={{ position: 'relative', overflow: 'hidden', borderRadius: 10, background: '#111' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: t.quote ? '60%' : '72%' }}>
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                {t.before ? <img src={t.before} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 12, color: '#333' }}>antes</div>}
+                <div style={{ position: 'absolute', bottom: 6, left: 6, background: 'rgba(0,0,0,0.8)', color: '#888', padding: '2px 7px', fontSize: isStory ? 16 : 11, fontWeight: 700, borderRadius: 3, letterSpacing: '0.1em' }}>ANTES</div>
+              </div>
+              <div style={{ position: 'relative', overflow: 'hidden' }}>
+                {t.after ? <img src={t.after} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 12, color: '#333' }}>después</div>}
+                <div style={{ position: 'absolute', bottom: 6, right: 6, background: sty.accent, color: '#000', padding: '2px 7px', fontSize: isStory ? 16 : 11, fontWeight: 700, borderRadius: 3, letterSpacing: '0.1em' }}>DESPUÉS</div>
+              </div>
+            </div>
+            <div style={{ background: '#0e0e0e', borderTop: `2px solid ${sty.accent}`, padding: isStory ? '10px 16px' : '6px 10px', height: t.quote ? '40%' : '28%', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+              {t.quote ? (
+                <div style={{ fontSize: isStory ? 18 : 12, color: '#bbb', fontStyle: 'italic', lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>"{t.quote}"</div>
+              ) : null}
+              {t.result && <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 28 : 19, color: sty.accent, letterSpacing: '0.05em', lineHeight: 1, marginTop: t.quote ? 4 : 0 }}>{t.result}</div>}
+              {(t.time || t.name) && <div style={{ fontSize: isStory ? 15 : 10, color: '#888', fontWeight: 600, marginTop: 2 }}>{[t.name, t.time].filter(Boolean).join(' · ')}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showLogo && <LogoWatermark sty={sty} size={isStory ? 50 : 40} position="br" />}
+    </div>
+  );
+};
+
+// ─── QUOTE ONLY POST ──────────────────────────────────────────────────────────
+const QuotePost = ({ data, sty, plat, showLogo }) => {
+  const isStory = plat.h > plat.w;
+  const quote = data?.quote || '"Aquí va la frase del paciente..."';
+  const name = data?.name;
+  const result = data?.result;
+  const time = data?.time;
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: sty.bg,
+      display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Corner decorations */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: isStory ? 180 : 120, height: isStory ? 180 : 120, borderTop: `6px solid ${sty.accent}`, borderLeft: `6px solid ${sty.accent}` }} />
+      <div style={{ position: 'absolute', bottom: 0, right: 0, width: isStory ? 180 : 120, height: isStory ? 180 : 120, borderBottom: `6px solid ${sty.accent}`, borderRight: `6px solid ${sty.accent}` }} />
+
+      {/* Glow */}
+      <div style={{ position: 'absolute', width: '50%', height: '50%', borderRadius: '50%', background: `radial-gradient(circle, ${sty.accent}0d 0%, transparent 70%)`, top: '25%', left: '25%', pointerEvents: 'none' }} />
+
+      {/* Header */}
+      <div style={{ padding: isStory ? '80px 80px 0' : '60px 80px 0', zIndex: 2, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Logo color={sty.accent} size={isStory ? 56 : 44} />
+        <div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 44 : 34, color: '#fff', letterSpacing: '0.1em', lineHeight: 1 }}>NUTRI VANNE</div>
+          <div style={{ fontSize: isStory ? 18 : 14, color: sty.accent, fontWeight: 700, letterSpacing: '0.25em', marginTop: 3 }}>TESTIMONIO REAL</div>
+        </div>
+      </div>
+
+      {/* Quote */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: isStory ? '60px 80px' : '40px 80px', zIndex: 2 }}>
+        <div style={{ fontSize: isStory ? 100 : 80, color: sty.accent, fontFamily: "'Bebas Neue', sans-serif", lineHeight: 0.8, marginBottom: isStory ? 32 : 20, opacity: 0.5 }}>"</div>
+        <div style={{ fontSize: isStory ? 44 : 32, color: '#fff', fontWeight: 300, lineHeight: 1.45, fontStyle: 'italic' }}>
+          {quote}
+        </div>
+        <div style={{ height: 3, background: sty.accent, width: isStory ? 100 : 72, marginTop: isStory ? 48 : 32, marginBottom: isStory ? 24 : 16 }} />
+        {name && (
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 36 : 28, color: sty.accent, letterSpacing: '0.15em' }}>
+            {name}
+          </div>
+        )}
+        {(result || time) && (
+          <div style={{ fontSize: isStory ? 26 : 19, color: '#888', fontWeight: 600, marginTop: 8, letterSpacing: '0.05em' }}>
+            {[result, time].filter(Boolean).join(' · ')}
+          </div>
+        )}
+      </div>
+
+      {showLogo && <LogoWatermark sty={sty} size={isStory ? 50 : 40} position="br" />}
+    </div>
+  );
+};
+
+// ─── PROMO POST ───────────────────────────────────────────────────────────────
+const PromoPost = ({ data, sty, plat, showLogo }) => {
+  const isStory = plat.h > plat.w;
+  const hasBg = !!data?.bgPhoto;
+
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: sty.bg,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Background photo */}
+      {hasBg && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+          <img src={data.bgPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.62)' }} />
+        </div>
+      )}
+
+      {!hasBg && <div style={{ position: 'absolute', width: '60%', height: '60%', borderRadius: '50%', background: `radial-gradient(circle, ${sty.accent}18 0%, transparent 70%)`, top: '20%', left: '20%', pointerEvents: 'none' }} />}
+
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 120, height: 120, borderTop: `6px solid ${sty.accent}`, borderLeft: `6px solid ${sty.accent}`, zIndex: 2 }} />
+      <div style={{ position: 'absolute', bottom: 0, right: 0, width: 120, height: 120, borderBottom: `6px solid ${sty.accent}`, borderRight: `6px solid ${sty.accent}`, zIndex: 2 }} />
+
+      <div style={{ zIndex: 2, textAlign: 'center', padding: '0 10%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isStory ? 36 : 24 }}>
+        <Logo color={sty.accent} size={isStory ? 96 : 76} />
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 34 : 26, color: sty.accent, letterSpacing: '0.3em' }}>NUTRI VANNE</div>
+
+        {data?.badge && (
+          <div style={{ background: sty.accent, color: '#000', fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 32 : 24, letterSpacing: '0.25em', padding: `${isStory ? 12 : 8}px ${isStory ? 36 : 24}px`, borderRadius: 4 }}>{data.badge}</div>
+        )}
+
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 108 : 82, color: '#fff', lineHeight: 0.9, letterSpacing: '-0.02em', textAlign: 'center' }}>
+          {(data?.headline || '¡TRANSFORMA\nTU CUERPO!').split('\n').map((line, i) => <div key={i}>{line}</div>)}
+        </div>
+
+        {data?.subline && (
+          <div style={{ fontSize: isStory ? 28 : 20, color: hasBg ? '#ddd' : '#aaa', fontWeight: 400, lineHeight: 1.5, maxWidth: '80%' }}>{data.subline}</div>
+        )}
+
+        {data?.cta && (
+          <div style={{ background: sty.accent, color: '#000', fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 42 : 32, letterSpacing: '0.15em', padding: `${isStory ? 18 : 12}px ${isStory ? 72 : 52}px`, borderRadius: 8, marginTop: 8 }}>{data.cta}</div>
+        )}
+      </div>
+
+      {showLogo && <LogoWatermark sty={sty} size={isStory ? 48 : 38} position="br" />}
+    </div>
+  );
+};
+
+// ─── METRICS POST ─────────────────────────────────────────────────────────────
+const MetricsPost = ({ data, sty, plat, showLogo }) => {
+  const isStory = plat.h > plat.w;
+  const metrics = data?.metrics || [];
+  return (
+    <div style={{ width: '100%', height: '100%', background: sty.bg, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ height: 8, background: sty.accent, flexShrink: 0 }} />
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: isStory ? '60px 90px' : '50px 90px', gap: isStory ? 56 : 38 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 18 }}>
+            <Logo color={sty.accent} size={isStory ? 64 : 52} />
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 52 : 42, color: '#fff', letterSpacing: '0.1em' }}>NUTRI VANNE</div>
+          </div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 46 : 36, color: sty.accent, letterSpacing: '0.2em' }}>
+            {data?.title || 'RESULTADOS REALES'}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: metrics.length <= 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 18, width: '100%' }}>
+          {(metrics.length > 0 ? metrics : [{ val: '-7 kg', label: 'Pérdida de peso' }, { val: '28 días', label: 'Tiempo' }, { val: '100%', label: 'Sin rebote' }]).map((m, i) => (
+            <div key={i} style={{ background: '#0e0e0e', border: `1px solid ${sty.accent}33`, borderRadius: 12, padding: isStory ? '36px 20px' : '24px 18px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: isStory ? 74 : 56, color: sty.accent, lineHeight: 1, letterSpacing: '0.02em' }}>{m.val || '---'}</div>
+              <div style={{ fontSize: isStory ? 22 : 16, color: '#999', fontWeight: 500, lineHeight: 1.3 }}>{m.label || 'métrica'}</div>
+            </div>
+          ))}
+        </div>
+
+        {data?.name && (
+          <div style={{ fontSize: isStory ? 28 : 20, color: '#666', fontWeight: 600 }}>Paciente: {data.name}</div>
+        )}
+      </div>
+
+      <div style={{ height: 4, background: sty.accent, width: '30%', alignSelf: 'flex-end', marginRight: 80, marginBottom: 40, flexShrink: 0 }} />
+      {showLogo && <LogoWatermark sty={sty} size={isStory ? 52 : 42} position="br" />}
+    </div>
+  );
+};
+
+// ─── POST CANVAS ──────────────────────────────────────────────────────────────
+const PostCanvas = ({ config, canvasRef }) => {
+  const { postType, platform, style, testimonials, promoData, metricsData, quoteData, showLogo } = config;
+  const plat = PLATFORMS.find(p => p.id === platform) || PLATFORMS[0];
+  const sty = STYLES.find(s => s.id === style) || STYLES[0];
+
+  const MAX_W = 400;
+  const ratio = plat.h / plat.w;
+  const previewW = Math.min(MAX_W, plat.w);
+  const previewH = previewW * ratio;
+  const scale = previewW / plat.w;
+
+  const canvasStyle = {
+    width: plat.w, height: plat.h,
+    transform: `scale(${scale})`, transformOrigin: 'top left',
+    position: 'relative', overflow: 'hidden', fontFamily: "'Inter', sans-serif", flexShrink: 0,
+  };
+
+  const renderContent = () => {
+    if (postType === 'single')  return <SingleTestimonial data={testimonials[0]} sty={sty} plat={plat} showLogo={showLogo} />;
+    if (postType === 'collage') return <CollageTestimonial data={testimonials} sty={sty} plat={plat} showLogo={showLogo} />;
+    if (postType === 'quote')   return <QuotePost data={quoteData} sty={sty} plat={plat} showLogo={showLogo} />;
+    if (postType === 'promo')   return <PromoPost data={promoData} sty={sty} plat={plat} showLogo={showLogo} />;
+    if (postType === 'metrics') return <MetricsPost data={metricsData} sty={sty} plat={plat} showLogo={showLogo} />;
+    return null;
+  };
+
+  return (
+    <div style={{ width: previewW, height: previewH, position: 'relative', overflow: 'hidden', borderRadius: 8, boxShadow: '0 0 40px rgba(57,255,20,0.12)' }}>
+      <div ref={canvasRef} style={canvasStyle}>
+        {renderContent()}
+      </div>
+    </div>
+  );
+};
+
+// ─── Step indicator ───────────────────────────────────────────────────────────
+const Steps = ({ current, steps }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
+    {steps.map((s, i) => (
+      <React.Fragment key={i}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 26, height: 26, borderRadius: '50%', background: i <= current ? '#39FF14' : '#2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: i <= current ? '#000' : '#555', transition: 'all .2s' }}>{i < current ? '✓' : i + 1}</div>
+          <div style={{ fontSize: 9, color: i === current ? '#39FF14' : '#555', fontWeight: 600, letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{s}</div>
+        </div>
+        {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < current ? '#39FF14' : '#2a2a2a', margin: '0 3px', marginBottom: 16, transition: 'background .2s' }} />}
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+const App = () => {
+  const [step, setStep] = useState(0);
+  const [postType, setPostType] = useState('single');
+  const [platform, setPlatform] = useState('story');
+  const [style, setStyle] = useState('dark_neon');
+  const [showLogo, setShowLogo] = useState(true);
+  const [testimonials, setTestimonials] = useState([{ before: null, after: null, name: '', result: '', time: '', quote: '' }]);
+  const [quoteData, setQuoteData] = useState({ quote: '', name: '', result: '', time: '' });
+  const [promoData, setPromoData] = useState({ headline: '¡TRANSFORMA\nTU CUERPO!', subline: 'Con plan personalizado de nutrición y entrenamiento', cta: '¡COMIENZA HOY!', badge: 'OFERTA ACTIVA', bgPhoto: null });
+  const [metricsData, setMetricsData] = useState({ title: 'RESULTADOS REALES', name: '', metrics: [{ val: '', label: '' }, { val: '', label: '' }, { val: '', label: '' }] });
+  const [exporting, setExporting] = useState(false);
+  const canvasRef = useRef();
+
+  const stepLabels = ['TIPO', 'FORMATO', 'ESTILO', 'CONTENIDO', 'EXPORTAR'];
+
+  const addTestimonial = () => { if (testimonials.length < 4) setTestimonials([...testimonials, { before: null, after: null, name: '', result: '', time: '', quote: '' }]); };
+  const removeTestimonial = (i) => setTestimonials(testimonials.filter((_, idx) => idx !== i));
+  const updateTestimonial = (i, data) => setTestimonials(testimonials.map((t, idx) => idx === i ? data : t));
+  const updateMetric = (i, field, val) => { const m = [...metricsData.metrics]; m[i] = { ...m[i], [field]: val }; setMetricsData({ ...metricsData, metrics: m }); };
+
+  const doExport = async () => {
+    if (!canvasRef.current) return;
+    setExporting(true);
+    try {
+      const plat = PLATFORMS.find(p => p.id === platform);
+      const el = canvasRef.current;
+      const naturalW = plat.w;
+      const naturalH = plat.h;
+      const displayW = el.offsetWidth;
+      const pixelRatio = naturalW / displayW;
+
+      const canvas = await html2canvas(el, {
+        scale: pixelRatio,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        width: displayW,
+        height: el.offsetHeight,
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      link.download = `nutrivanne_${postType}_${platform}_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    } catch (e) { console.error(e); alert('Error al exportar. Intenta hacer screenshot manual.'); }
+    setExporting(false);
+  };
+
+  const config = { postType, platform, style, testimonials, promoData, metricsData, quoteData, showLogo };
+
+  const needsPhotos = postType === 'single' || postType === 'collage';
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#080808' }}>
+
+      {/* LEFT PANEL */}
+      <div style={{ width: 420, flexShrink: 0, borderRight: '1px solid #1c1c1c', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#0d0d0d' }}>
+
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #1c1c1c', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <Logo color="#39FF14" size={26} />
+          <div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#f5f5f5', letterSpacing: '0.12em', lineHeight: 1 }}>NUTRI VANNE</div>
+            <div style={{ fontSize: 9, color: '#39FF14', fontWeight: 700, letterSpacing: '0.2em', marginTop: 2 }}>STORY CREATOR</div>
+          </div>
+        </div>
+
+        {/* Steps + Content */}
+        <div style={{ flex: 1, overflow: 'auto', padding: '24px 24px 20px' }}>
+          <Steps current={step} steps={stepLabels} />
+
+          {/* STEP 0: Type */}
+          {step === 0 && (
+            <div>
+              <div style={sectionTitle}>¿Qué tipo de post?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {POST_TYPES.map(pt => (
+                  <button key={pt.id} onClick={() => setPostType(pt.id)} style={{ background: postType === pt.id ? '#0e1f09' : '#111', border: `1.5px solid ${postType === pt.id ? '#39FF14' : '#222'}`, borderRadius: 10, padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, transition: 'all .15s', textAlign: 'left' }}>
+                    <span style={{ fontSize: 22 }}>{pt.icon}</span>
+                    <div>
+                      <div style={{ color: '#f5f5f5', fontWeight: 700, fontSize: 13, letterSpacing: '0.04em' }}>{pt.label}</div>
+                      <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{pt.desc}</div>
+                    </div>
+                    {postType === pt.id && <div style={{ marginLeft: 'auto', color: '#39FF14', fontWeight: 800, fontSize: 16 }}>✓</div>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 1: Platform */}
+          {step === 1 && (
+            <div>
+              <div style={sectionTitle}>¿Para qué formato?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {PLATFORMS.map(pl => (
+                  <button key={pl.id} onClick={() => setPlatform(pl.id)} style={{ background: platform === pl.id ? '#0e1f09' : '#111', border: `1.5px solid ${platform === pl.id ? '#39FF14' : '#222'}`, borderRadius: 10, padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, transition: 'all .15s', textAlign: 'left' }}>
+                    <span style={{ fontSize: 18, width: 26 }}>{pl.icon}</span>
+                    <div>
+                      <div style={{ color: '#f5f5f5', fontWeight: 700, fontSize: 13 }}>{pl.label}</div>
+                      <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{pl.dim} · {pl.w}×{pl.h}px</div>
+                    </div>
+                    {platform === pl.id && <div style={{ marginLeft: 'auto', color: '#39FF14', fontWeight: 800, fontSize: 16 }}>✓</div>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Style */}
+          {step === 2 && (
+            <div>
+              <div style={sectionTitle}>Estilo visual</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {STYLES.map(s => (
+                  <button key={s.id} onClick={() => setStyle(s.id)} style={{ background: style === s.id ? '#0e1f09' : '#111', border: `1.5px solid ${style === s.id ? '#39FF14' : '#222'}`, borderRadius: 10, padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, transition: 'all .15s', textAlign: 'left' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: s.bg, border: `2px solid ${s.accent}`, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ color: '#f5f5f5', fontWeight: 700, fontSize: 13 }}>{s.label}</div>
+                      <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{s.desc}</div>
+                    </div>
+                    {style === s.id && <div style={{ marginLeft: 'auto', color: '#39FF14', fontWeight: 800, fontSize: 16 }}>✓</div>}
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: '#111', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, color: '#aaa', flex: 1 }}>Mostrar logo Nutri Vanne</span>
+                <div onClick={() => setShowLogo(!showLogo)} style={{ width: 42, height: 22, borderRadius: 11, cursor: 'pointer', position: 'relative', background: showLogo ? '#39FF14' : '#2a2a2a', transition: 'background .2s' }}>
+                  <div style={{ position: 'absolute', top: 2, left: showLogo ? 22 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Content */}
+          {step === 3 && (
+            <div>
+              {needsPhotos && (
+                <div>
+                  <div style={sectionTitle}>{postType === 'single' ? 'Datos del paciente' : 'Pacientes del collage'}</div>
+                  {testimonials.map((t, i) => (
+                    <TestimonialForm key={i} data={t} onChange={v => updateTestimonial(i, v)} index={i}
+                      showRemove={testimonials.length > 1 && postType === 'collage'}
+                      onRemove={() => removeTestimonial(i)} />
+                  ))}
+                  {postType === 'collage' && testimonials.length < 4 && (
+                    <button onClick={addTestimonial} style={{ width: '100%', padding: '11px', border: '2px dashed #2a2a2a', background: 'none', color: '#555', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em', transition: 'all .15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#39FF14'; e.currentTarget.style.color = '#39FF14'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#555'; }}>
+                      + AGREGAR PACIENTE
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {postType === 'quote' && (
+                <div>
+                  <div style={sectionTitle}>Frase del paciente</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      {label('LO QUE DIJO EL PACIENTE *')}
+                      <textarea rows={5} value={quoteData.quote} placeholder='"Bajé 7kg sin pasar hambre. Vanne me enseñó a comer de verdad..."'
+                        onChange={e => setQuoteData({ ...quoteData, quote: e.target.value })}
+                        style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+                    </div>
+                    <div>
+                      {label('NOMBRE (opcional)')}
+                      <input type="text" value={quoteData.name} placeholder="Ana G." onChange={e => setQuoteData({ ...quoteData, name: e.target.value })} style={inputStyle} />
+                    </div>
+                    <div>
+                      {label('RESULTADO (opcional)')}
+                      <input type="text" value={quoteData.result} placeholder="-8kg" onChange={e => setQuoteData({ ...quoteData, result: e.target.value })} style={inputStyle} />
+                    </div>
+                    <div>
+                      {label('TIEMPO (opcional)')}
+                      <input type="text" value={quoteData.time} placeholder="6 semanas" onChange={e => setQuoteData({ ...quoteData, time: e.target.value })} style={inputStyle} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {postType === 'promo' && (
+                <div>
+                  <div style={sectionTitle}>Contenido promocional</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      {label('FOTO DE FONDO (opcional — sube tu foto)')}
+                      <ImageUploader lbl="SUBIR FOTO DE FONDO" value={promoData.bgPhoto} onChange={v => setPromoData({ ...promoData, bgPhoto: v })} aspect="9/16" />
+                      {promoData.bgPhoto && (
+                        <button onClick={() => setPromoData({ ...promoData, bgPhoto: null })} style={{ marginTop: 6, background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em' }}>× QUITAR FOTO</button>
+                      )}
+                    </div>
+                    {[
+                      { key: 'badge',    lbl: 'BADGE (ej: OFERTA ACTIVA)',     placeholder: 'OFERTA ACTIVA' },
+                      { key: 'headline', lbl: 'TITULAR (usa Enter para salto)', placeholder: '¡TRANSFORMA\nTU CUERPO!' },
+                      { key: 'subline',  lbl: 'SUBTÍTULO',                      placeholder: 'Con plan personalizado de nutrición y entrenamiento' },
+                      { key: 'cta',      lbl: 'BOTÓN CTA',                      placeholder: '¡COMIENZA HOY!' },
+                    ].map(f => (
+                      <div key={f.key}>
+                        {label(f.lbl)}
+                        <input type="text" value={promoData[f.key] || ''} placeholder={f.placeholder}
+                          onChange={e => setPromoData({ ...promoData, [f.key]: e.target.value })} style={inputStyle} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {postType === 'metrics' && (
+                <div>
+                  <div style={sectionTitle}>Post de resultados</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      {label('TÍTULO')}
+                      <input type="text" value={metricsData.title || ''} placeholder="RESULTADOS REALES"
+                        onChange={e => setMetricsData({ ...metricsData, title: e.target.value })} style={inputStyle} />
+                    </div>
+                    <div>
+                      {label('NOMBRE PACIENTE')}
+                      <input type="text" value={metricsData.name || ''} placeholder="(opcional)"
+                        onChange={e => setMetricsData({ ...metricsData, name: e.target.value })} style={inputStyle} />
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: '#666', fontWeight: 600, letterSpacing: '0.1em', marginBottom: 10 }}>MÉTRICAS</div>
+                      {metricsData.metrics.map((m, i) => (
+                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 8, marginBottom: 8 }}>
+                          <input type="text" value={m.val} placeholder="-7 kg" onChange={e => updateMetric(i, 'val', e.target.value)} style={inputStyle} />
+                          <input type="text" value={m.label} placeholder="Descripción" onChange={e => updateMetric(i, 'label', e.target.value)} style={inputStyle} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 4: Export */}
+          {step === 4 && (
+            <div>
+              <div style={sectionTitle}>¡Listo para exportar!</div>
+              <div style={{ background: '#0e1f09', border: '1px solid #39FF1433', borderRadius: 10, padding: '14px 16px', marginBottom: 20 }}>
+                <div style={{ fontSize: 11, color: '#39FF14', fontWeight: 700, letterSpacing: '0.1em', marginBottom: 8 }}>RESUMEN</div>
+                {[
+                  ['Tipo',       POST_TYPES.find(t => t.id === postType)?.label],
+                  ['Formato',    PLATFORMS.find(p => p.id === platform)?.label + ' · ' + PLATFORMS.find(p => p.id === platform)?.dim],
+                  ['Estilo',     STYLES.find(s => s.id === style)?.label],
+                  ['Logo',       showLogo ? 'Visible' : 'Oculto'],
+                  ['Resolución', PLATFORMS.find(p => p.id === platform)?.w + '×' + PLATFORMS.find(p => p.id === platform)?.h + 'px'],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                    <span style={{ color: '#666' }}>{k}</span>
+                    <span style={{ color: '#f5f5f5', fontWeight: 600 }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={doExport} disabled={exporting} style={{ width: '100%', padding: '15px', background: exporting ? '#1a2e0a' : '#39FF14', color: '#000', border: 'none', borderRadius: 10, cursor: exporting ? 'default' : 'pointer', fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: '0.15em', transition: 'all .2s' }}>
+                {exporting ? 'EXPORTANDO...' : '⬇ DESCARGAR PNG'}
+              </button>
+
+              <div style={{ marginTop: 16, padding: '12px 14px', background: '#111', borderRadius: 8, fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+                <strong style={{ color: '#777', display: 'block', marginBottom: 4 }}>💡 Tips</strong>
+                Si las imágenes no aparecen en el PNG descargado, haz screenshot de la vista previa de la derecha — es la misma resolución.
+                <br/><br/>
+                Para Instagram Stories: sube el PNG directo, sin recomprimir.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <div style={{ padding: '14px 24px 20px', borderTop: '1px solid #1c1c1c', display: 'flex', gap: 8, flexShrink: 0 }}>
+          {step > 0 && (
+            <button onClick={() => setStep(step - 1)} style={{ flex: 1, padding: '11px', background: 'none', border: '1.5px solid #2a2a2a', color: '#888', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 12, letterSpacing: '0.08em' }}>← ATRÁS</button>
+          )}
+          {step < 4 && (
+            <button onClick={() => setStep(step + 1)} style={{ flex: 2, padding: '11px', background: '#39FF14', color: '#000', border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: '0.12em', transition: 'all .15s' }}>
+              {step === 3 ? 'VER EXPORTAR →' : 'SIGUIENTE →'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT PREVIEW */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#080808' }}>
+
+        <div style={{ padding: '18px 28px', borderBottom: '1px solid #151515', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ fontSize: 10, color: '#555', fontWeight: 700, letterSpacing: '0.15em' }}>VISTA PREVIA EN TIEMPO REAL</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {PLATFORMS.map(pl => (
+              <button key={pl.id} onClick={() => setPlatform(pl.id)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 10, background: platform === pl.id ? '#39FF1422' : 'none', border: `1px solid ${platform === pl.id ? '#39FF14' : '#222'}`, color: platform === pl.id ? '#39FF14' : '#555', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em', transition: 'all .15s' }}>{pl.label}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto', padding: 28 }}>
+          <PostCanvas config={config} canvasRef={canvasRef} />
+        </div>
+
+        <div style={{ padding: '14px 28px', borderTop: '1px solid #151515', display: 'flex', gap: 10, flexShrink: 0, justifyContent: 'center' }}>
+          {STYLES.map(s => (
+            <button key={s.id} onClick={() => setStyle(s.id)} style={{ padding: '6px 16px', borderRadius: 20, fontSize: 10, background: style === s.id ? '#0e1f09' : 'none', border: `1px solid ${style === s.id ? '#39FF14' : '#222'}`, color: style === s.id ? '#39FF14' : '#555', cursor: 'pointer', fontWeight: 700, letterSpacing: '0.08em', transition: 'all .15s' }}>{s.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

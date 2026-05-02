@@ -271,15 +271,52 @@
     }
 
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: #1d5c3f;
+    }
+    .tab-btn {
+      padding: 0.7rem 1.4rem;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: rgba(255,255,255,0.85); }
+    .tab-btn.active { color: white; border-bottom-color: #52b788; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    #tab-story.active {
+      display: flex;
+      height: calc(100vh - 88px);
+    }
+    #tab-story iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>UTM Links · NutriVanne</h1>
-  <p>Genera links para cruzar con GA4</p>
+  <h1>Herramientas · NutriVanne</h1>
+  <p>Panel interno de contenido</p>
 </header>
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('utm')">🔗 UTM Links</button>
+  <button class="tab-btn" onclick="switchTab('story')">🎨 Story Creator</button>
+</div>
 
+<div id="tab-utm" class="tab-panel active">
 <div class="main">
 
   <!-- Formulario -->
@@ -330,6 +367,13 @@
     <div id="historial"><div class="empty">Cargando...</div></div>
   </div>
 
+</div>
+
+</div><!-- /main -->
+</div><!-- /tab-utm -->
+
+<div id="tab-story" class="tab-panel">
+  <iframe src="story-creator.html" title="Story Creator"></iframe>
 </div>
 
 <div class="toast" id="toast">Copiado</div>
@@ -444,6 +488,13 @@
   }
 
   cargarHistorial();
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
 </script>
 </body>
 </html>
